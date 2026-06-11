@@ -1595,42 +1595,51 @@ async function downloadCurrentReceiptPDF() {
     toast('No receipt loaded', 'error');
     return;
   }
-  
-  const tempDiv = document.createElement('div');
-  tempDiv.style.position = 'absolute';
-  tempDiv.style.left = '-9999px';
-  tempDiv.style.top = '0';
-  tempDiv.style.width = '794px';
-  tempDiv.innerHTML = lastReceiptContext.htmlMarkup;
-  document.body.appendChild(tempDiv);
 
-  const opt = {
-    margin:       10,
-    filename:     lastReceiptContext.fileName,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2 },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-  
   const btn = document.getElementById('receiptDownloadBtn');
   const originalText = btn.innerHTML;
   btn.innerHTML = '⏳ Generating...';
   btn.disabled = true;
 
-  html2pdf().set(opt).from(tempDiv).save().then(() => {
-    document.body.removeChild(tempDiv);
-    btn.innerHTML = originalText;
-    btn.disabled = false;
-    toast('PDF receipt downloaded: ' + lastReceiptContext.fileName, 'success');
-  }).catch(err => {
-    console.error(err);
-    if (document.body.contains(tempDiv)) {
-      document.body.removeChild(tempDiv);
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;left:0;top:0;width:794px;height:1123px;border:none;opacity:0;pointer-events:none;z-index:-1;';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body { margin: 0; padding: 20px; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+  </style></head><body>${lastReceiptContext.htmlMarkup}</body></html>`);
+  doc.close();
+
+  await new Promise((resolve) => {
+    const done = () => setTimeout(resolve, 150);
+    if (iframe.contentWindow.document.readyState === 'complete') {
+      done();
+    } else {
+      iframe.onload = done;
     }
+  });
+
+  const opt = {
+    margin: 10,
+    filename: lastReceiptContext.fileName,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 794 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  try {
+    await html2pdf().set(opt).from(doc.body).save();
+    toast('PDF receipt downloaded: ' + lastReceiptContext.fileName, 'success');
+  } catch (err) {
+    console.error(err);
+    toast('Failed to download PDF', 'error');
+  } finally {
+    document.body.removeChild(iframe);
     btn.innerHTML = originalText;
     btn.disabled = false;
-    toast('Failed to download PDF', 'error');
-  });
+  }
 }
 
 function printReceipt() {
