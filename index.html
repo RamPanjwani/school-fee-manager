@@ -930,24 +930,53 @@ function generateReceiptNo() {
   const now = new Date();
   return 'REC' + now.getFullYear().toString().slice(2) + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '-' + String(Math.floor(Math.random()*9000)+1000);
 }
+function canonicalAcademicYear(year) {
+  const raw = (year || '').toString().trim();
+  const match = raw.match(/^(\d{2}|\d{4})\s*-\s*(\d{2})$/);
+  if (!match) return raw;
+  let start = Number(match[1]);
+  if (match[1].length === 2) start += start >= 50 ? 1900 : 2000;
+  return `${start}-${String((start + 1) % 100).padStart(2, '0')}`;
+}
+function academicYearStart(year) {
+  const canonical = canonicalAcademicYear(year);
+  const match = canonical.match(/^(\d{4})-\d{2}$/);
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+}
+function displayAcademicYear(year) {
+  return canonicalAcademicYear(year) || '-';
+}
+function currentAcademicStart() {
+  const today = new Date();
+  return today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+}
+function makeAcademicYear(start) {
+  return `${start}-${String((start + 1) % 100).padStart(2, '0')}`;
+}
+function getFormYears() {
+  const start = currentAcademicStart();
+  const years = [];
+  for (let i = -5; i <= 5; i++) years.push(makeAcademicYear(start + i));
+  return years;
+}
 function getYears() {
   const set = new Set();
   for (const sch of SCHOOLS) {
-    (DB[sch] || []).forEach(s => { if (s.year) set.add(s.year); });
+    (DB[sch] || []).forEach(s => { if (s.year) set.add(canonicalAcademicYear(s.year)); });
   }
-  const years = Array.from(set).sort();
-  if (!years.length) years.push('2024-25', '2025-26');
+  getFormYears().forEach(y => set.add(y));
+  const years = Array.from(set).sort((a, b) => academicYearStart(a) - academicYearStart(b));
   return years;
 }
 function populateYearDropdowns() {
-  const years = getYears();
-  const current = '2025-26';
+  const current = makeAcademicYear(currentAcademicStart());
   ['payYear','newYear','filterYear','rptYear'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const isFilter = id === 'filterYear' || id === 'rptYear';
-    let html = isFilter ? '<option value="">All Years</option>' : '';
-    years.forEach(y => { html += `<option${y===current?' selected':''}>${y}</option>`; });
+    const years = isFilter ? getYears() : getFormYears();
+    let html = isFilter ? '<option value="" selected>All Years</option>' : '';
+    years.forEach(y => { html += `<option value="${y}"${!isFilter && y===current?' selected':''}>${y}</option>`; });
     el.innerHTML = html;
   });
 }
@@ -1212,7 +1241,7 @@ function filterStudents() {
     if (search && !s.name.toLowerCase().includes(search)) return false;
     if (fSchool && s.school !== fSchool) return false;
     if (fSection && s.section !== fSection) return false;
-    if (fYear && s.year !== fYear) return false;
+    if (fYear && canonicalAcademicYear(s.year) !== fYear) return false;
     if (fStatus && getStatus(s) !== fStatus) return false;
     return true;
   });
@@ -1247,7 +1276,7 @@ function renderStudentsTable() {
       <td style="font-weight:600">${s.name}</td>
       <td><span class="badge badge-school">${s.school}</span></td>
       <td><span class="badge badge-section">${s.section || '-'}</span></td>
-      <td>${s.year || '-'}</td>
+      <td>${displayAcademicYear(s.year)}</td>
       <td>${fmt(s.std_fees)}</td>
       <td style="font-weight:600;color:var(--accent2)">${fmt(s.total_paid)}</td>
       <td style="font-weight:600;color:${balColor}">${fmt(Math.abs(balance))}${balance<0?' (Over)':''}</td>
@@ -1325,7 +1354,7 @@ function searchPayStudent() {
   ac.innerHTML = matches.map(s => {
     const bal = (Number(s.std_fees)||0) - (Number(s.total_paid)||0);
     return `<div class="ac-item" onclick="selectPayStudent('${s._sch}',${s._idx})">
-      <div><div class="ac-name">${s.name}</div><div class="ac-school">${s._sch} · ${s.section || ''} · ${s.year || ''}</div></div>
+      <div><div class="ac-name">${s.name}</div><div class="ac-school">${s._sch} · ${s.section || ''} · ${displayAcademicYear(s.year)}</div></div>
       <div class="ac-bal" style="color:${bal<=0?'var(--accent2)':'var(--danger)'}">Bal: ${fmt(Math.abs(bal))}</div>
     </div>`;
   }).join('');
@@ -1348,7 +1377,7 @@ function showPayStudentSummary(s) {
     <div class="detail-badges">
       <span class="badge badge-school">${s.school}</span>
       <span class="badge badge-section">${s.section || '-'}</span>
-      <span class="badge badge-year">${s.year || '-'}</span>
+      <span class="badge badge-year">${displayAcademicYear(s.year)}</span>
       ${statusBadge(s)}
     </div>
     <div style="font-size:.85rem;margin-bottom:6px">Total Fees: <strong>${fmt(s.std_fees)}</strong></div>
@@ -1376,7 +1405,7 @@ async function addPayment() {
   const mode = document.getElementById('payMode').value;
   const rec = document.getElementById('payReceipt').value.trim() || generateReceiptNo();
   const particulars = document.getElementById('payParticulars').value.trim() || 'School Fees';
-  const year = document.getElementById('payYear').value;
+  const year = canonicalAcademicYear(document.getElementById('payYear').value);
 
   // Format date to DD/MM/YYYY
   const dp = date.split('-');
@@ -1431,7 +1460,7 @@ async function addStudent() {
   const school = document.getElementById('newSchool').value;
   const name = document.getElementById('newName').value.trim();
   const section = document.getElementById('newSection').value;
-  const year = document.getElementById('newYear').value;
+  const year = canonicalAcademicYear(document.getElementById('newYear').value);
   const fees = Number(document.getElementById('newFees').value);
 
   if (!school) { toast('Please select a school', 'error'); return; }
@@ -1442,7 +1471,7 @@ async function addStudent() {
 
   // Duplicate check
   if (!DB[school]) DB[school] = [];
-  const dup = DB[school].find(s => s.name.toLowerCase() === name.toLowerCase() && s.year === year);
+  const dup = DB[school].find(s => s.name.toLowerCase() === name.toLowerCase() && canonicalAcademicYear(s.year) === year);
   if (dup) { toast('A student with this name already exists for this year', 'error'); return; }
 
   const student = {
@@ -1504,7 +1533,7 @@ function viewStudent(school, name) {
   html += '<div class="detail-badges">';
   html += `<span class="badge badge-school">${s.school}</span>`;
   html += `<span class="badge badge-section">${s.section || '-'}</span>`;
-  html += `<span class="badge badge-year">${s.year || '-'}</span>`;
+  html += `<span class="badge badge-year">${displayAcademicYear(s.year)}</span>`;
   html += statusBadge(s);
   html += '</div>';
 
@@ -1681,7 +1710,7 @@ function getReceiptMarkup(school, s, p, amount, recStr, dateStr, amtWords, modeS
           </tr>
           <tr>
             <td style="padding:6px 0;"><strong>Class:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; font-weight:bold;">${s.section || '-'}</span></td>
-            <td style="padding:6px 0; text-align:right;"><strong>Roll No:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px; font-weight:bold;">${s.year || '-'}</span></td>
+            <td style="padding:6px 0; text-align:right;"><strong>Roll No:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px; font-weight:bold;">${displayAcademicYear(s.year)}</span></td>
           </tr>
         </table>
 
@@ -1759,7 +1788,7 @@ function getReceiptMarkup(school, s, p, amount, recStr, dateStr, amtWords, modeS
           </tr>
           <tr>
             <td style="padding:6px 0;"><strong>इयत्ता:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; font-weight:bold;">${s.section || '-'}</span></td>
-            <td style="padding:6px 0; text-align:right;"><strong>हजेरी क्र्:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px; font-weight:bold;">${s.year || '-'}</span></td>
+            <td style="padding:6px 0; text-align:right;"><strong>हजेरी क्र्:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px; font-weight:bold;">${displayAcademicYear(s.year)}</span></td>
           </tr>
         </table>
 
@@ -1932,7 +1961,7 @@ function renderReports() {
   let all = getAllStudentsUnfiltered();
   if (fSchool) all = all.filter(s => s.school === fSchool);
   if (fSection) all = all.filter(s => s.section === fSection);
-  if (fYear) all = all.filter(s => s.year === fYear);
+  if (fYear) all = all.filter(s => canonicalAcademicYear(s.year) === fYear);
 
   // Outstanding
   const outstanding = all.filter(s => {
@@ -1951,7 +1980,7 @@ function renderReports() {
     oHtml += `<tr>
       <td style="font-weight:600">${s.name}</td>
       <td><span class="badge badge-school">${s.school}</span></td>
-      <td>${s.section||'-'}</td><td>${s.year||'-'}</td>
+      <td>${s.section||'-'}</td><td>${displayAcademicYear(s.year)}</td>
       <td>${fmt(s.std_fees)}</td>
       <td style="color:var(--accent2)">${fmt(s.total_paid)}</td>
       <td style="font-weight:700;color:var(--danger)">${fmt(bal)}</td>
@@ -1993,7 +2022,7 @@ function exportAllExcel() {
   const studentsData = [['Name','School','Section','Year','Total Fees','Total Paid','Balance','Status']];
   all.forEach(s => {
     const bal = (Number(s.std_fees)||0) - (Number(s.total_paid)||0);
-    studentsData.push([s.name, s.school, s.section, s.year, s.std_fees, s.total_paid, bal, getStatus(s)]);
+    studentsData.push([s.name, s.school, s.section, displayAcademicYear(s.year), s.std_fees, s.total_paid, bal, getStatus(s)]);
   });
 
   // Sheet 2: Payments
@@ -2001,7 +2030,7 @@ function exportAllExcel() {
   all.forEach(s => {
     (s.payments || []).forEach(p => {
       const amount = Number(p.amount) || Number(p.cash) || Number(p.online) || Number(p.cheque) || 0;
-      paymentsData.push([s.name, s.school, p.date, p.particulars, p.rec, p.cash||0, p.online||0, p.cheque||0, amount, p.year]);
+      paymentsData.push([s.name, s.school, p.date, p.particulars, p.rec, p.cash||0, p.online||0, p.cheque||0, amount, displayAcademicYear(p.year)]);
     });
   });
 
@@ -2021,7 +2050,7 @@ function exportStudentsCSV() {
   let csv = 'Name,School,Section,Year,Total Fees,Total Paid,Balance,Status\n';
   filteredStudents.forEach(s => {
     const bal = (Number(s.std_fees)||0) - (Number(s.total_paid)||0);
-    csv += `"${s.name}","${s.school}","${s.section}","${s.year}",${s.std_fees},${s.total_paid},${bal},${getStatus(s)}\n`;
+    csv += `"${s.name}","${s.school}","${s.section}","${displayAcademicYear(s.year)}",${s.std_fees},${s.total_paid},${bal},${getStatus(s)}\n`;
   });
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
@@ -2126,7 +2155,7 @@ async function runImport() {
         name: name,
         school: school,
         section: secCol >= 0 ? (row[secCol] || '').toString().trim() : '',
-        year: yearCol >= 0 ? (row[yearCol] || '').toString().trim() : '',
+        year: yearCol >= 0 ? canonicalAcademicYear((row[yearCol] || '').toString().trim()) : '',
         std_fees: feesCol >= 0 ? (Number(row[feesCol]) || 0) : 0,
         total_paid: 0,
         payments: []
@@ -2166,7 +2195,7 @@ async function runImport() {
         particulars: partCol >= 0 ? (row[partCol] || '').toString().trim() : 'Imported',
         rec: recCol >= 0 ? (row[recCol] || '').toString().trim() : generateReceiptNo(),
         cash: amount, online: 0, cheque: 0, amount: amount,
-        year: yearCol >= 0 ? (row[yearCol] || '').toString().trim() : ''
+        year: yearCol >= 0 ? canonicalAcademicYear((row[yearCol] || '').toString().trim()) : ''
       };
       student.payments.push(payment);
       student.total_paid = (Number(student.total_paid) || 0) + amount;
@@ -2365,7 +2394,7 @@ async function migrateData(rawData, logEl) {
         name: s.name || '',
         school: targetSchool,
         section: s.section || '',
-        year: s.year || '',
+        year: canonicalAcademicYear(s.year || ''),
         std_fees: Number(s.std_fees) || 0,
         total_paid: Number(s.total_paid) || 0,
         payments: Array.isArray(s.payments) ? s.payments.map(p => ({
@@ -2375,7 +2404,7 @@ async function migrateData(rawData, logEl) {
           online: Number(p.online) || 0,
           cash: Number(p.cash) || 0,
           cheque: Number(p.cheque) || 0,
-          year: p.year || '',
+          year: canonicalAcademicYear(p.year || ''),
           amount: Number(p.amount) || Number(p.cash) || Number(p.online) || Number(p.cheque) || 0
         })) : []
       };
