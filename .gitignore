@@ -1,0 +1,4 @@
+node_modules/
+test_*.pdf
+*.log
+.DS_Store
