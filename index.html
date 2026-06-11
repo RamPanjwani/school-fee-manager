@@ -63,13 +63,16 @@ input,select,textarea,button{font-family:inherit;font-size:.95rem}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
 .topbar .title h1{font-size:1.2rem;font-weight:700}
 .topbar .title p{font-size:.78rem;color:var(--muted)}
-.topbar .actions{display:flex;gap:8px;flex-wrap:wrap}
+.topbar .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .topbar .actions button{padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
 .topbar .actions button:hover{border-color:var(--accent);color:var(--accent)}
 .topbar .actions .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
 .topbar .actions .btn-primary:hover{background:#1d4ed8}
 .topbar .actions .btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
 .topbar .actions .btn-danger:hover{background:#dc2626}
+.language-switch{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:#fff}
+.language-switch label{font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.language-switch select{border:none;background:transparent;font-size:.82rem;font-weight:700;color:var(--text);outline:none;cursor:pointer}
 
 /* ===== PAGE CONTENT ===== */
 .page{display:none;padding:24px 28px 40px}
@@ -359,6 +362,13 @@ const B64_SARASWATI_PDF = "JVBERi0xLjcKJYGBgYEKCjUgMCBvYmoKPDwKL1R5cGUgL1hPYmplY
         <p id="topSubtitle">Overview of fee collection</p>
       </div>
       <div class="actions">
+        <div class="language-switch">
+          <label for="languageSelect">Language</label>
+          <select id="languageSelect" onchange="setLanguage(this.value)">
+            <option value="en">English</option>
+            <option value="mr">मराठी</option>
+          </select>
+        </div>
         <button class="btn-primary" onclick="showPage('addPayment')">+ Add Payment</button>
         <button onclick="showPage('addStudent')">+ Add Student</button>
         <button onclick="exportAllExcel()">📤 Export Excel</button>
@@ -657,6 +667,222 @@ let importedHeaders = [];
 const SCHOOLS = ['Saraswati Vidyalaya', 'International School'];
 const SECTIONS = ['PRE-PRIMARY', 'PRIMARY', 'SECONDARY', 'JR.COLLEGE'];
 
+/* ===== LANGUAGE ===== */
+let currentLanguage = localStorage.getItem('sfmLanguage') || 'en';
+const TRANSLATIONS_MR = {
+  'Language': 'भाषा',
+  'English': 'English',
+  'New City Schools': 'न्यू सिटी स्कूल्स',
+  'Fee Management System': 'फी व्यवस्थापन प्रणाली',
+  'Fee Management System — Admin Login': 'फी व्यवस्थापन प्रणाली — अॅडमिन लॉगिन',
+  'Username': 'वापरकर्ता नाव',
+  'Password': 'पासवर्ड',
+  'Enter username': 'वापरकर्ता नाव टाका',
+  'Enter password': 'पासवर्ड टाका',
+  'Sign In': 'साइन इन',
+  'Loading data from cloud…': 'क्लाउडमधून डेटा लोड होत आहे…',
+  'Authenticating…': 'प्रमाणीकरण होत आहे…',
+  'Loading student data from cloud…': 'विद्यार्थ्यांचा डेटा क्लाउडमधून लोड होत आहे…',
+  'Dashboard': 'डॅशबोर्ड',
+  'Overview of fee collection': 'फी संकलनाचा आढावा',
+  'All Students': 'सर्व विद्यार्थी',
+  'View and manage student records': 'विद्यार्थी नोंदी पहा आणि व्यवस्थापित करा',
+  'Add Payment': 'पेमेंट जोडा',
+  'Record a new fee payment': 'नवीन फी पेमेंट नोंदवा',
+  'Add Student': 'विद्यार्थी जोडा',
+  'Register a new student': 'नवीन विद्यार्थी नोंदवा',
+  'Reports': 'अहवाल',
+  'Financial reports and analytics': 'आर्थिक अहवाल आणि विश्लेषण',
+  'Import Excel': 'एक्सेल आयात',
+  'Import data from Excel files': 'एक्सेल फाइलमधून डेटा आयात करा',
+  'Active School': 'सक्रिय शाळा',
+  'All Schools': 'सर्व शाळा',
+  '+ Add Payment': '+ पेमेंट जोडा',
+  '+ Add Student': '+ विद्यार्थी जोडा',
+  'Export Excel': 'एक्सेल निर्यात',
+  'Logout': 'लॉगआउट',
+  'School Collection Progress': 'शाळानिहाय फी संकलन प्रगती',
+  'Quick Stats': 'त्वरित आकडेवारी',
+  'Recent Payments': 'अलीकडील पेमेंट्स',
+  'Filters': 'फिल्टर्स',
+  'Search students...': 'विद्यार्थी शोधा...',
+  'All Sections': 'सर्व विभाग',
+  'All Years': 'सर्व वर्षे',
+  'All Status': 'सर्व स्थिती',
+  'Paid': 'भरलेले',
+  'Partial': 'अंशतः भरलेले',
+  'Unpaid': 'न भरलेले',
+  'Overpaid': 'जास्त भरलेले',
+  'Clear': 'साफ करा',
+  'Export CSV': 'CSV निर्यात',
+  'Record Fee Payment': 'फी पेमेंट नोंदवा',
+  'School *': 'शाळा *',
+  'Select School': 'शाळा निवडा',
+  'Academic Year *': 'शैक्षणिक वर्ष *',
+  'Student *': 'विद्यार्थी *',
+  'Type student name...': 'विद्यार्थ्याचे नाव टाइप करा...',
+  'Amount (₹) *': 'रक्कम (₹) *',
+  'Date *': 'दिनांक *',
+  'Payment Mode': 'पेमेंट पद्धत',
+  'Cash': 'रोख',
+  'Online': 'ऑनलाइन',
+  'Cheque': 'चेक',
+  'Receipt No.': 'पावती क्रमांक',
+  'Auto-generated on save': 'सेव्ह केल्यावर आपोआप तयार होईल',
+  'Particulars': 'तपशील',
+  'e.g. Term 1 Fees, Annual Fee, etc.': 'उदा. टर्म 1 फी, वार्षिक फी इ.',
+  'Save Payment': 'पेमेंट सेव्ह करा',
+  'Student Summary': 'विद्यार्थी सारांश',
+  'Add New Student': 'नवीन विद्यार्थी जोडा',
+  'Student Name *': 'विद्यार्थ्याचे नाव *',
+  'Full name': 'पूर्ण नाव',
+  'Section *': 'विभाग *',
+  'Select': 'निवडा',
+  'Total Fees (₹) *': 'एकूण फी (₹) *',
+  'Outstanding Balance Report': 'थकबाकी अहवाल',
+  'Collection Summary by Section': 'विभागानुसार संकलन सारांश',
+  'Import from Excel': 'एक्सेलमधून आयात',
+  'Target School *': 'लक्ष्य शाळा *',
+  'Import Mode *': 'आयात प्रकार *',
+  'Students (Names + Fees)': 'विद्यार्थी (नावे + फी)',
+  'Payments (Transaction Records)': 'पेमेंट्स (व्यवहार नोंदी)',
+  'Drag & drop an Excel file here, or click to browse': 'एक्सेल फाइल येथे ड्रॅग करा किंवा निवडण्यासाठी क्लिक करा',
+  'Import Data': 'डेटा आयात',
+  'Download Template': 'टेम्पलेट डाउनलोड',
+  'Column Mapping': 'कॉलम मॅपिंग',
+  'Map your Excel columns to the required fields. Auto-detected where possible.': 'आपले एक्सेल कॉलम आवश्यक फील्डशी जुळवा. शक्य असल्यास आपोआप ओळखले जाईल.',
+  'Upload a file to see column mapping options.': 'कॉलम मॅपिंग पर्याय पाहण्यासाठी फाइल अपलोड करा.',
+  'Import Log': 'आयात लॉग',
+  'Waiting for import...': 'आयातीची प्रतीक्षा आहे...',
+  'Student Details': 'विद्यार्थी तपशील',
+  'Delete Student': 'विद्यार्थी हटवा',
+  'Close': 'बंद करा',
+  'Fee Payment Receipt': 'फी पेमेंट पावती',
+  'Download PDF': 'PDF डाउनलोड',
+  'Print': 'प्रिंट',
+  'First-Time Setup': 'पहिली सेटअप',
+  'Welcome to New City Schools Fee Manager!': 'न्यू सिटी स्कूल्स फी मॅनेजरमध्ये स्वागत!',
+  'No existing data found in the cloud. You can upload your old HTML file to migrate your data, or start fresh.': 'क्लाउडमध्ये आधीचा डेटा आढळला नाही. डेटा स्थलांतरासाठी जुनी HTML फाइल अपलोड करा किंवा नव्याने सुरू करा.',
+  'Drop your old': 'तुमची जुनी',
+  'file here': 'फाइल येथे टाका',
+  "We'll extract the student data automatically": 'विद्यार्थ्यांचा डेटा आपोआप काढला जाईल',
+  'Start Fresh': 'नव्याने सुरू करा',
+  'Total Students': 'एकूण विद्यार्थी',
+  'Total Collected': 'एकूण जमा',
+  'Outstanding Balance': 'थकबाकी',
+  'Total Fees Billed': 'एकूण फी बिल',
+  'No data': 'डेटा नाही',
+  'Fully Paid': 'पूर्ण भरलेले',
+  'No Payment': 'पेमेंट नाही',
+  'Collection Rate': 'संकलन दर',
+  'No payments recorded yet.': 'अजून कोणतेही पेमेंट नोंदलेले नाही.',
+  'Student': 'विद्यार्थी',
+  'School': 'शाळा',
+  'Date': 'दिनांक',
+  'Mode': 'पद्धत',
+  'Amount': 'रक्कम',
+  'Receipt': 'पावती',
+  'Name': 'नाव',
+  'Section': 'विभाग',
+  'Year': 'वर्ष',
+  'Total Fees': 'एकूण फी',
+  'Total Paid': 'एकूण भरलेले',
+  'Balance': 'बाकी',
+  'Status': 'स्थिती',
+  'Actions': 'कृती',
+  'No students found': 'विद्यार्थी आढळले नाहीत',
+  'Pay': 'पेमेंट',
+  'View': 'पहा',
+  'students': 'विद्यार्थी',
+  'No matching students': 'जुळणारे विद्यार्थी नाहीत',
+  'Bal:': 'बाकी:',
+  'Total Fees:': 'एकूण फी:',
+  'Paid:': 'भरलेले:',
+  'Balance:': 'बाकी:',
+  'collected': 'जमा',
+  'Payment History': 'पेमेंट इतिहास',
+  'No payments recorded.': 'कोणतेही पेमेंट नोंदलेले नाही.',
+  'No outstanding balances found': 'थकबाकी आढळली नाही',
+  'No data available': 'डेटा उपलब्ध नाही',
+  'Student Name': 'विद्यार्थ्याचे नाव',
+  'Receipt No': 'पावती क्रमांक',
+  'Receipt No.': 'पावती क्रमांक',
+  '-- Skip --': '-- वगळा --',
+  'Template downloaded': 'टेम्पलेट डाउनलोड झाले',
+  'CSV exported!': 'CSV निर्यात झाले!',
+  'Excel file exported successfully!': 'एक्सेल फाइल यशस्वीरीत्या निर्यात झाली!',
+  'paid': 'भरलेले',
+  'partial': 'अंशतः',
+  'unpaid': 'न भरलेले',
+  'overpaid': 'जास्त भरलेले'
+};
+
+const PARTIAL_TRANSLATION_KEYS = [
+  'Export Excel',
+  'Export CSV',
+  'Import Data',
+  'Download Template',
+  'Download PDF',
+  'Add Payment',
+  'Add Student',
+  'Delete Student',
+  'Save Payment',
+  'No outstanding balances found',
+  'students',
+  'collected',
+  'Bal:',
+  'Drop your old',
+  'file here',
+  "We'll extract the student data automatically"
+];
+
+function translateText(text) {
+  if (currentLanguage !== 'mr' || !text) return text;
+  const trimmed = text.trim();
+  if (TRANSLATIONS_MR[trimmed]) {
+    return text.replace(trimmed, TRANSLATIONS_MR[trimmed]);
+  }
+  let translated = text;
+  PARTIAL_TRANSLATION_KEYS.forEach(en => {
+    const mr = TRANSLATIONS_MR[en];
+    if (!mr) return;
+    translated = translated.split(en).join(mr);
+  });
+  return translated;
+}
+
+function applyLanguage() {
+  currentLanguage = currentLanguage || 'en';
+  document.documentElement.lang = currentLanguage === 'mr' ? 'mr' : 'en';
+  const langSelect = document.getElementById('languageSelect');
+  if (langSelect) langSelect.value = currentLanguage;
+
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent || ['SCRIPT', 'STYLE'].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      return node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    if (!node._langOriginal) node._langOriginal = node.nodeValue;
+    node.nodeValue = currentLanguage === 'mr' ? translateText(node._langOriginal) : node._langOriginal;
+  });
+
+  document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
+    if (!el.dataset.langPlaceholderOriginal) el.dataset.langPlaceholderOriginal = el.getAttribute('placeholder') || '';
+    el.setAttribute('placeholder', currentLanguage === 'mr' ? translateText(el.dataset.langPlaceholderOriginal) : el.dataset.langPlaceholderOriginal);
+  });
+}
+
+function setLanguage(lang) {
+  currentLanguage = lang === 'mr' ? 'mr' : 'en';
+  localStorage.setItem('sfmLanguage', currentLanguage);
+  applyLanguage();
+}
+
 /* ===== UTILITY ===== */
 function fmt(n) {
   n = Number(n) || 0;
@@ -734,6 +960,7 @@ function toast(msg, type='success') {
   t.className = 'toast ' + type;
   t.innerHTML = `${icons[type]||''} ${msg}`;
   c.appendChild(t);
+  applyLanguage();
   setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(40px)'; setTimeout(()=>t.remove(),300); }, 3500);
 }
 
@@ -2201,6 +2428,40 @@ function startFresh() {
 
 /* ===== INITIALIZE ===== */
 SCHOOLS.forEach(s => DB[s] = []);
+[
+  'showPage',
+  'renderDashboard',
+  'filterStudents',
+  'renderStudentsTable',
+  'updatePayStudentList',
+  'searchPayStudent',
+  'selectPayStudent',
+  'showPayStudentSummary',
+  'clearPaymentForm',
+  'clearStudentForm',
+  'viewStudent',
+  'renderReports',
+  'buildColumnMapper',
+  'handleImportFile',
+  'runImport',
+  'openModal',
+  'closeModal'
+].forEach(fnName => {
+  const original = window[fnName];
+  if (typeof original !== 'function') return;
+  window[fnName] = function(...args) {
+    const result = original.apply(this, args);
+    if (result && typeof result.then === 'function') {
+      return result.then(value => {
+        applyLanguage();
+        return value;
+      });
+    }
+    applyLanguage();
+    return result;
+  };
+});
+applyLanguage();
 
 </script>
 </body>
