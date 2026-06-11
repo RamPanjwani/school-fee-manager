@@ -1425,164 +1425,169 @@ async function showReceipt(school, studentName, paymentIndex) {
   const prefix = getReceiptFilePrefix(school);
   const fileName = `${prefix}_Receipt_${sanitizeFileName(recStr)}_${sanitizeFileName(s.name)}.pdf`;
 
-  lastReceiptContext = { school, studentName, paymentIndex, fileName };
+  const htmlMarkup = getReceiptMarkup(school, s, p, amount, recStr, dateStr, amtWords, modeStr);
+  lastReceiptContext = { school, studentName, paymentIndex, fileName, htmlMarkup };
 
   const container = document.getElementById('receiptContent');
-  
+  container.innerHTML = htmlMarkup;
+
+  openModal('receiptModal');
+}
+
+function getReceiptMarkup(school, s, p, amount, recStr, dateStr, amtWords, modeStr) {
+  const isIntl = school.includes('International');
   if (isIntl) {
-    container.innerHTML = `
-      <div class="receipt" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:#333; padding:20px; border:1px solid #ddd; background:#fff;">
-        <div style="text-align:center; margin-bottom:15px;">
-          <h2 style="margin:0 0 5px 0; font-size:18px; font-weight:bold; letter-spacing:0.5px;">NEW CITY INTERNATIONAL SCHOOL</h2>
-          <p style="margin:0; font-size:10px; color:#666;">Plot No. 164, Sector-19, Kharghar, Navi Mumbai</p>
+    return `
+      <div style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:#333; padding:40px; background:#fff; width:100%; box-sizing:border-box; max-width:680px; margin:auto; border:1px solid #ddd;">
+        <div style="text-align:center; margin-bottom:25px;">
+          <h2 style="margin:0 0 8px 0; font-size:24px; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase;">NEW CITY INTERNATIONAL SCHOOL</h2>
+          <p style="margin:0; font-size:13px; color:#555;">Plot No. 164, Sector-19, Kharghar, Navi Mumbai</p>
         </div>
         
-        <table style="width:100%; border-collapse:collapse; margin-bottom:12px; font-size:11px;">
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:14px;">
           <tr>
-            <td style="padding:3px 0; width:50%;"><strong>No.</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%;">${recStr}</span></td>
-            <td style="padding:3px 0; width:50%; text-align:right;"><strong>Date:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px;">${dateStr}</span></td>
+            <td style="padding:6px 0; width:50%;"><strong>No.</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; font-weight:bold;">${recStr}</span></td>
+            <td style="padding:6px 0; width:50%; text-align:right;"><strong>Date:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px; font-weight:bold;">${dateStr}</span></td>
           </tr>
           <tr>
-            <td colspan="2" style="padding:3px 0;"><strong>Name:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:85%;">${s.name}</span></td>
+            <td colspan="2" style="padding:6px 0;"><strong>Name:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:85%; font-weight:bold;">${s.name}</span></td>
           </tr>
           <tr>
-            <td style="padding:3px 0;"><strong>Class:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%;">${s.section || '-'}</span></td>
-            <td style="padding:3px 0; text-align:right;"><strong>Roll No:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px;">${s.year || '-'}</span></td>
+            <td style="padding:6px 0;"><strong>Class:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; font-weight:bold;">${s.section || '-'}</span></td>
+            <td style="padding:6px 0; text-align:right;"><strong>Roll No:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px; font-weight:bold;">${s.year || '-'}</span></td>
           </tr>
         </table>
 
-        <table style="width:100%; border-collapse:collapse; margin-bottom:12px; font-size:11px; border:1px solid #333;">
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:14px; border:1.5px solid #333;">
           <thead>
-            <tr style="border-bottom:1px solid #333; background:#f5f5f5;">
-              <th style="border-right:1px solid #333; padding:6px; text-align:left;">Particulars</th>
-              <th style="padding:6px; text-align:right; width:90px;">Rs.</th>
+            <tr style="border-bottom:1.5px solid #333; background:#f5f5f5;">
+              <th style="border-right:1.5px solid #333; padding:10px; text-align:left;">Particulars</th>
+              <th style="padding:10px; text-align:right; width:120px;">Rs.</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">Tuition Fees</td>
-              <td style="padding:5px 6px; text-align:right;">${amount}.00</td>
+            <tr style="border-bottom:1px solid #aaa;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">Tuition Fees</td>
+              <td style="padding:8px 10px; text-align:right; font-weight:bold;">${amount}.00</td>
             </tr>
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">Term Fee I/II</td>
-              <td style="padding:5px 6px; text-align:right;">-</td>
+            <tr style="border-bottom:1px solid #aaa;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">Term Fee I/II</td>
+              <td style="padding:8px 10px; text-align:right;">-</td>
             </tr>
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">Comp. Fee</td>
-              <td style="padding:5px 6px; text-align:right;">-</td>
+            <tr style="border-bottom:1px solid #aaa;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">Comp. Fee</td>
+              <td style="padding:8px 10px; text-align:right;">-</td>
             </tr>
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">Project Fee</td>
-              <td style="padding:5px 6px; text-align:right;">-</td>
+            <tr style="border-bottom:1px solid #aaa;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">Project Fee</td>
+              <td style="padding:8px 10px; text-align:right;">-</td>
             </tr>
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">Library Fee</td>
-              <td style="padding:5px 6px; text-align:right;">-</td>
+            <tr style="border-bottom:1px solid #aaa;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">Library Fee</td>
+              <td style="padding:8px 10px; text-align:right;">-</td>
             </tr>
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">Spot Fee/Toys Fee</td>
-              <td style="padding:5px 6px; text-align:right;">-</td>
+            <tr style="border-bottom:1px solid #aaa;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">Spot Fee/Toys Fee</td>
+              <td style="padding:8px 10px; text-align:right;">-</td>
             </tr>
-            <tr style="border-bottom:1px solid #333;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">Other Activity Fee</td>
-              <td style="padding:5px 6px; text-align:right;">-</td>
+            <tr style="border-bottom:1.5px solid #333;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">Other Activity Fee</td>
+              <td style="padding:8px 10px; text-align:right;">-</td>
             </tr>
-            <tr style="font-weight:bold; background:#f5f5f5;">
-              <td style="border-right:1px solid #333; padding:6px;">Total</td>
-              <td style="padding:6px; text-align:right;">${amount}.00</td>
+            <tr style="font-weight:bold; background:#e8e8e8;">
+              <td style="border-right:1.5px solid #333; padding:10px;">Total</td>
+              <td style="padding:10px; text-align:right; font-size:15px;">${amount}.00</td>
             </tr>
           </tbody>
         </table>
 
-        <div style="font-size:10px; line-height:1.5; margin-bottom:20px;">
-          <div style="margin-bottom:3px;">Received with thanks a sum of Rupees: <span style="border-bottom:1px dotted #333; display:inline-block; width:60%; font-style:italic;">${amtWords}</span></div>
-          <div style="margin-bottom:3px;">By cash / cheque No: <span style="border-bottom:1px dotted #333; display:inline-block; width:65%; font-weight:bold;">${modeStr}</span></div>
-          <div>Drawn on: <span style="border-bottom:1px dotted #333; display:inline-block; width:80%;">${dateStr}</span></div>
+        <div style="font-size:13px; line-height:1.8; margin-bottom:35px;">
+          <div style="margin-bottom:6px;">Received with thanks a sum of Rupees: <span style="border-bottom:1px dotted #333; display:inline-block; width:65%; font-style:italic; font-weight:bold; padding-left:5px;">${amtWords}</span></div>
+          <div style="margin-bottom:6px;">By cash / cheque No: <span style="border-bottom:1px dotted #333; display:inline-block; width:70%; font-weight:bold; padding-left:5px;">${modeStr}</span></div>
+          <div>Drawn on: <span style="border-bottom:1px dotted #333; display:inline-block; width:80%; font-weight:bold; padding-left:5px;">${dateStr}</span></div>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; margin-top:15px; font-size:10px;">
-          <div style="text-align:center; border-top:1px solid #333; width:130px; padding-top:3px;">
+        <div style="display:flex; justify-content:flex-end; margin-top:30px; font-size:13px;">
+          <div style="text-align:center; border-top:1.5px solid #333; width:180px; padding-top:6px; font-weight:bold;">
             Receiver's Signature
           </div>
         </div>
       </div>
     `;
   } else {
-    container.innerHTML = `
-      <div class="receipt" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:#333; padding:20px; border:1px solid #ddd; background:#fff;">
-        <div style="text-align:center; margin-bottom:15px;">
-          <h2 style="margin:0 0 5px 0; font-size:20px; font-weight:bold; letter-spacing:0.5px;">न्यू सिटी सरस्वती विद्यालय</h2>
-          <p style="margin:0; font-size:10px; color:#666;">मुंबई क्र. १४४, सेक्टर-१९, खारघर, नवी मुंबई</p>
+    return `
+      <div style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:#333; padding:40px; background:#fff; width:100%; box-sizing:border-box; max-width:680px; margin:auto; border:1px solid #ddd;">
+        <div style="text-align:center; margin-bottom:25px;">
+          <h2 style="margin:0 0 8px 0; font-size:26px; font-weight:bold; letter-spacing:0.5px;">न्यू सिटी सरस्वती विद्यालय</h2>
+          <p style="margin:0; font-size:13px; color:#555; font-weight:bold;">मुंबई क्र. १४४, सेक्टर-१९, खारघर, नवी मुंबई</p>
         </div>
         
-        <table style="width:100%; border-collapse:collapse; margin-bottom:12px; font-size:11px;">
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:14px;">
           <tr>
-            <td style="padding:3px 0; width:50%;"><strong>पावती क्र्.</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:65%;">${recStr}</span></td>
-            <td style="padding:3px 0; width:50%; text-align:right;"><strong>दिनांक:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px;">${dateStr}</span></td>
+            <td style="padding:6px 0; width:50%;"><strong>पावती क्र्.</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:65%; font-weight:bold;">${recStr}</span></td>
+            <td style="padding:6px 0; width:50%; text-align:right;"><strong>दिनांक:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px; font-weight:bold;">${dateStr}</span></td>
           </tr>
           <tr>
-            <td colspan="2" style="padding:3px 0;"><strong>नाव:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:85%;">${s.name}</span></td>
+            <td colspan="2" style="padding:6px 0;"><strong>नाव:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:85%; font-weight:bold;">${s.name}</span></td>
           </tr>
           <tr>
-            <td style="padding:3px 0;"><strong>इयत्ता:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%;">${s.section || '-'}</span></td>
-            <td style="padding:3px 0; text-align:right;"><strong>हजेरी क्र्:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px;">${s.year || '-'}</span></td>
+            <td style="padding:6px 0;"><strong>इयत्ता:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; font-weight:bold;">${s.section || '-'}</span></td>
+            <td style="padding:6px 0; text-align:right;"><strong>हजेरी क्र्:</strong> <span style="border-bottom:1px dotted #333; padding-bottom:1px; display:inline-block; width:70%; text-align:left; margin-left:5px; font-weight:bold;">${s.year || '-'}</span></td>
           </tr>
         </table>
 
-        <table style="width:100%; border-collapse:collapse; margin-bottom:12px; font-size:11px; border:1px solid #333;">
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:14px; border:1.5px solid #333;">
           <thead>
-            <tr style="border-bottom:1px solid #333; background:#f5f5f5;">
-              <th style="border-right:1px solid #333; padding:6px; text-align:left;">तपशील</th>
-              <th style="padding:6px; text-align:right; width:90px;">रुपये</th>
+            <tr style="border-bottom:1.5px solid #333; background:#f5f5f5;">
+              <th style="border-right:1.5px solid #333; padding:10px; text-align:left;">तपशील</th>
+              <th style="padding:10px; text-align:right; width:120px;">रुपये</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">वर्ग शुल्क</td>
-              <td style="padding:5px 6px; text-align:right;">${amount}.00</td>
+            <tr style="border-bottom:1px solid #aaa;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">वर्ग शुल्क</td>
+              <td style="padding:8px 10px; text-align:right; font-weight:bold;">${amount}.00</td>
             </tr>
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">सत्र शुल्क</td>
-              <td style="padding:5px 6px; text-align:right;">-</td>
+            <tr style="border-bottom:1px solid #aaa;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">सत्र शुल्क</td>
+              <td style="padding:8px 10px; text-align:right;">-</td>
             </tr>
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">संगणक शुल्क</td>
-              <td style="padding:5px 6px; text-align:right;">-</td>
+            <tr style="border-bottom:1px solid #aaa;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">संगणक शुल्क</td>
+              <td style="padding:8px 10px; text-align:right;">-</td>
             </tr>
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">प्रकल्प शुल्क</td>
-              <td style="padding:5px 6px; text-align:right;">-</td>
+            <tr style="border-bottom:1px solid #aaa;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">प्रकल्प शुल्क</td>
+              <td style="padding:8px 10px; text-align:right;">-</td>
             </tr>
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">क्रीडा शुल्क</td>
-              <td style="padding:5px 6px; text-align:right;">-</td>
+            <tr style="border-bottom:1px solid #aaa;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">क्रीडा शुल्क</td>
+              <td style="padding:8px 10px; text-align:right;">-</td>
             </tr>
-            <tr style="border-bottom:1px solid #333;">
-              <td style="border-right:1px solid #333; padding:5px 6px;">प्रयोगशाळा शुल्क</td>
-              <td style="padding:5px 6px; text-align:right;">-</td>
+            <tr style="border-bottom:1.5px solid #333;">
+              <td style="border-right:1.5px solid #333; padding:8px 10px;">प्रयोगशाळा शुल्क</td>
+              <td style="padding:8px 10px; text-align:right;">-</td>
             </tr>
-            <tr style="font-weight:bold; background:#f5f5f5;">
-              <td style="border-right:1px solid #333; padding:6px;">Total / एकूण</td>
-              <td style="padding:6px; text-align:right;">${amount}.00</td>
+            <tr style="font-weight:bold; background:#e8e8e8;">
+              <td style="border-right:1.5px solid #333; padding:10px;">Total / एकूण</td>
+              <td style="padding:10px; text-align:right; font-size:15px;">${amount}.00</td>
             </tr>
           </tbody>
         </table>
 
-        <div style="font-size:10px; line-height:1.5; margin-bottom:20px;">
-          <div style="margin-bottom:3px;">अक्षरी रुपये: <span style="border-bottom:1px dotted #333; display:inline-block; width:75%; font-style:italic;">${amtWords}</span></div>
-          <div style="margin-bottom:3px;">रोख / धनादेश क्र.: <span style="border-bottom:1px dotted #333; display:inline-block; width:65%; font-weight:bold;">${modeStr}</span></div>
+        <div style="font-size:13px; line-height:1.8; margin-bottom:35px;">
+          <div style="margin-bottom:6px;">अक्षरी रुपये: <span style="border-bottom:1px dotted #333; display:inline-block; width:75%; font-style:italic; font-weight:bold; padding-left:5px;">${amtWords}</span></div>
+          <div style="margin-bottom:6px;">रोख / धनादेश क्र.: <span style="border-bottom:1px dotted #333; display:inline-block; width:70%; font-weight:bold; padding-left:5px;">${modeStr}</span></div>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; margin-top:15px; font-size:10px;">
-          <div style="text-align:center; border-top:1px solid #333; width:130px; padding-top:3px;">
+        <div style="display:flex; justify-content:flex-end; margin-top:30px; font-size:13px;">
+          <div style="text-align:center; border-top:1.5px solid #333; width:180px; padding-top:6px; font-weight:bold;">
             प्राप्तकर्ता स्वाक्षरी
           </div>
         </div>
       </div>
     `;
   }
-
-  openModal('receiptModal');
 }
 
 async function downloadCurrentReceiptPDF() {
@@ -1590,7 +1595,15 @@ async function downloadCurrentReceiptPDF() {
     toast('No receipt loaded', 'error');
     return;
   }
-  const element = document.getElementById('receiptContent');
+  
+  const tempDiv = document.createElement('div');
+  tempDiv.style.position = 'absolute';
+  tempDiv.style.left = '-9999px';
+  tempDiv.style.top = '0';
+  tempDiv.style.width = '794px';
+  tempDiv.innerHTML = lastReceiptContext.htmlMarkup;
+  document.body.appendChild(tempDiv);
+
   const opt = {
     margin:       10,
     filename:     lastReceiptContext.fileName,
@@ -1598,17 +1611,22 @@ async function downloadCurrentReceiptPDF() {
     html2canvas:  { scale: 2 },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
+  
   const btn = document.getElementById('receiptDownloadBtn');
   const originalText = btn.innerHTML;
   btn.innerHTML = '⏳ Generating...';
   btn.disabled = true;
 
-  html2pdf().set(opt).from(element).save().then(() => {
+  html2pdf().set(opt).from(tempDiv).save().then(() => {
+    document.body.removeChild(tempDiv);
     btn.innerHTML = originalText;
     btn.disabled = false;
     toast('PDF receipt downloaded: ' + lastReceiptContext.fileName, 'success');
   }).catch(err => {
     console.error(err);
+    if (document.body.contains(tempDiv)) {
+      document.body.removeChild(tempDiv);
+    }
     btn.innerHTML = originalText;
     btn.disabled = false;
     toast('Failed to download PDF', 'error');
@@ -1620,12 +1638,31 @@ function printReceipt() {
     toast('No receipt loaded', 'error');
     return;
   }
-  const oldTitle = document.title;
-  document.title = lastReceiptContext.fileName.replace('.pdf', '');
-  window.print();
-  setTimeout(() => {
-    document.title = oldTitle;
-  }, 1000);
+  const printWindow = window.open('', '_blank', 'width=800,height=900');
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>${lastReceiptContext.fileName.replace('.pdf', '')}</title>
+        <style>
+          body { margin: 0; padding: 20px; background: #fff; }
+          @media print {
+            body { margin: 0; padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        ${lastReceiptContext.htmlMarkup}
+        <script>
+          window.onload = function() {
+            window.focus();
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          };
+        <\/script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
 }
 
 function buildReceiptHTML(student, payment, amount, mode, runningBalance, paymentIndex) {
